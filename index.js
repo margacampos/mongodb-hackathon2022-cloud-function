@@ -1,4 +1,5 @@
 const { MongoClient } = require("mongodb");
+const https = require('https');
 const {BigQuery} = require('@google-cloud/bigquery');
 require('dotenv').config()
 
@@ -49,6 +50,36 @@ exports.databaseUpdate = async(event, context) => {
       }
     
     }
+    function newsTitle() {
+
+      const data = JSON.stringify({
+        key: process.env.KEY,
+      });
+      
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': data.length,
+        },
+      };
+  
+      const req = https.request(process.env.URL, options, res => {
+        console.log(`statusCode: ${res.statusCode}`);
+      
+        res.on('data', d => {
+          process.stdout.write(d);
+        });
+      });
+  
+      req.on('error', error => {
+        console.error(error);
+      });
+      
+      req.write(data);
+      req.end();
+  
+    }
 
     try {
         const client = new MongoClient(process.env.MONGODB_URI);
@@ -59,11 +90,12 @@ exports.databaseUpdate = async(event, context) => {
         if(info){
           await events.deleteMany({});
           await events.insertMany(info);
+          newsTitle();
           console.log("done");
         } else{
           throw "BigQuery not working."
         }
-
+        
       } catch(err){
           console.log(err);
       }finally {
@@ -72,7 +104,7 @@ exports.databaseUpdate = async(event, context) => {
       }
     
   };
-
+  
 
 
  
